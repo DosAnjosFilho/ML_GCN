@@ -74,9 +74,8 @@ class GCNResnet(nn.Module):
 
         inp = inp[0]
         adj = gen_adj(self.A).detach()
-        x = self.gc1(inp, adj)
-        x = self.relu(x)
-        x = self.gc2(x, adj)
+        adj2 = torch.matmul(adj, adj)
+        x = self.gc1(inp, adj2)
 
         x = x.transpose(0, 1)
         x = torch.matmul(feature, x)
