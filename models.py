@@ -3,6 +3,7 @@ from torch.nn import Parameter
 from util import *
 import torch
 import torch.nn as nn
+import torch.nn.functional as f
 
 class GraphConvolution(nn.Module):
     """
@@ -56,9 +57,7 @@ class GCNResnet(nn.Module):
         self.num_classes = num_classes
         self.pooling = nn.MaxPool2d(14, 14)
 
-        self.gc1 = GraphConvolution(in_channel, 1024)
-        self.gc2 = GraphConvolution(1024, 2048)
-        self.relu = nn.LeakyReLU(0.2)
+        self.gc1 = GraphConvolution(in_channel, 2048)
 
         _adj = gen_A(num_classes, t, adj_file)
         self.A = Parameter(torch.from_numpy(_adj).float())
@@ -71,11 +70,11 @@ class GCNResnet(nn.Module):
         feature = self.pooling(feature)
         feature = feature.view(feature.size(0), -1)
 
-
         inp = inp[0]
         adj = gen_adj(self.A).detach()
         adj2 = torch.matmul(adj, adj)
         x = self.gc1(inp, adj2)
+        x = f.normalize(x, p=1, dim=1)
 
         x = x.transpose(0, 1)
         x = torch.matmul(feature, x)
@@ -85,7 +84,6 @@ class GCNResnet(nn.Module):
         return [
                 {'params': self.features.parameters(), 'lr': lr * lrp},
                 {'params': self.gc1.parameters(), 'lr': lr},
-                {'params': self.gc2.parameters(), 'lr': lr},
                 ]
 
 
