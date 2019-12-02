@@ -60,7 +60,8 @@ class GCNResnet(nn.Module):
         self.gc1 = GraphConvolution(in_channel, 2048)
 
         _adj = gen_A(num_classes, t, adj_file)
-        self.A = Parameter(torch.from_numpy(_adj).float())
+        A = torch.from_numpy(_adj).float()
+        self.A = Parameter(torch.matmul(A, A))
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
@@ -72,8 +73,7 @@ class GCNResnet(nn.Module):
 
         inp = inp[0]
         adj = gen_adj(self.A).detach()
-        adj2 = torch.matmul(adj, adj)
-        x = self.gc1(inp, adj2)
+        x = self.gc1(inp, adj)
         x = f.normalize(x, p=1, dim=1)
 
         x = x.transpose(0, 1)
